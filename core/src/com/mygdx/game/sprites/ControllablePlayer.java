@@ -13,16 +13,14 @@ import com.mygdx.game.states.Gamestate;
 public class ControllablePlayer extends Player{
 
     public ControllablePlayer(String internalTexturePath, int numFrames, int startX, int startY, float velX, float velY, char startDir, int speed) {
-        super(internalTexturePath, numFrames, startX, startY, velX, velY, startDir, speed);
+        super(internalTexturePath, numFrames, startX, startY, velX, velY, speed);
     }
 
     public void changeDirection(int screenX, int screenY) {
         screenY = (int) Gamestate.BOUNDS.getHeight() - screenY; // invert y
-        if (screenX < position.x && this.direction == 'r') {
-            this.direction = 'l';
+        if (screenX < position.x && this.velocity.x > 0) {
             decreaseSpeed();
-        } else if (screenX > position.x && direction == 'l') {
-            this.direction = 'r';
+        } else if (screenX > position.x && this.velocity.x < 0) {
             decreaseSpeed();
         } else {
             increaseSpeed();

@@ -6,10 +6,11 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.mygdx.game.MyGdxGame;
-import com.mygdx.game.sprites.Bird;
 import com.mygdx.game.sprites.ControllablePlayer;
 import com.mygdx.game.sprites.Player;
 
@@ -21,7 +22,7 @@ import java.util.Random;
 
 public class Gamestate extends State implements InputProcessor{
 
-    private final static int BIRDCOUNT = 2;
+    private final static int BIRDCOUNT = 5;
     private Texture bg;
     private Texture playBtn;
     private Texture imgHeli;
@@ -36,19 +37,17 @@ public class Gamestate extends State implements InputProcessor{
         super(gsm);
         bg = new Texture("bg_1280_640.png");
         playBtn = new Texture("playBtn.png");
-        //Player player1 = new Player("sheet_transp.png", 4, 10, 400, (float)0.1, 0, 'r', 400, true);
         helicopter = new ControllablePlayer("sheet_transp.png", 4, 10, 400, 0, 0, 'r', 100);
         birds = new Array<Player>();
         for (int i = 0; i <= BIRDCOUNT; i++) {
-            int x = randomNumber(0, 1200);
-            int y = randomNumber(0, 600);
-            char dir = 'r';
+            int x = randomNumber(0, 900);
+            int y = randomNumber(0, 400);
             float velX = (float) randomNumber(-100, 100) / 100;
             float velY = (float) randomNumber(-100, 100) / 100;
             if (velX < 0) {
-                birds.add(new Player("sheet_bird.png", 4, x, y, velX, velY, 'l', 100));
+                birds.add(new Player("sheet_bird.png", 4, x, y, velX, velY, 100));
             } else {
-                birds.add(new Player("sheet_bird.png", 4, x, y, velX, velY, 'r', 100));
+                birds.add(new Player("sheet_bird.png", 4, x, y, velX, velY, 100));
 
             }
         }
@@ -69,8 +68,17 @@ public class Gamestate extends State implements InputProcessor{
         handleInput();
         if (clickedPlay) {
             helicopter.update(dt);
-            for (Player bird: birds) {
+            for (Player bird : birds) {
                 bird.update(dt);
+                checkCollision(helicopter, bird);
+            }
+            for (int i = 0; i < BIRDCOUNT; i++) {
+                for (int j = 0; j < BIRDCOUNT; j++) {
+                    if (birds.get(i) != birds.get(j)) {
+                        checkCollision(birds.get(i), birds.get(j));
+
+                    }
+                }
             }
         }
     }
@@ -88,62 +96,64 @@ public class Gamestate extends State implements InputProcessor{
             font.draw(sb, "Speed: " + helicopter.getSpeed(), 10, MyGdxGame.HEIGHT -50);
 
             TextureRegion heliFrame = helicopter.getCurrentFrame();
-            char heliDir = helicopter.getDirection();
             float heliX = helicopter.getPosition().x;
             float heliY = helicopter.getPosition().y;
+            float heliVelX = helicopter.getVelocity().x;
             float heliWidth = heliFrame.getRegionWidth();
             float heliHeight = heliFrame.getRegionHeight();
-            sb.draw(heliFrame, heliDir == 'l' ? heliX + heliWidth : heliX, heliY, heliDir == 'l' ? -heliWidth : heliWidth, heliHeight);
+            sb.draw(heliFrame, heliVelX > 0 ? heliX : heliX + heliWidth, heliY, heliVelX < 0 ? -heliWidth : heliWidth, heliHeight);
 
             //Birds;
             for (int i = 0; i <= BIRDCOUNT; i++) {
                 Player bird = birds.get(i);
                 TextureRegion birdFrame = bird.getCurrentFrame();
-                char birdDir = bird.getDirection();
+                float birdVelX = bird.getVelocity().x;
                 float birdX = bird.getPosition().x;
                 float birdY = bird.getPosition().y;
                 float birdWidth = birdFrame.getRegionWidth();
                 float birdHeight = birdFrame.getRegionHeight();
-                sb.draw(birdFrame, birdDir == 'l' ? birdX + birdWidth : birdX, birdY, birdDir == 'l' ? -birdWidth : birdWidth, birdHeight);
+                sb.draw(birdFrame, birdVelX > 0 ? birdX : birdX + birdWidth, birdY, birdVelX < 0 ? -birdWidth : birdWidth, birdHeight);
             }
         }
 
         sb.end();
     }
 
-    private void checkCollisions() {
-        /*
-        Bird b = birds.get(0);
-
-        char hd = helicopter.getDirection();
-        char bd = b.getDirection();
-        float hx = helicopter.getPosition().x;
-        float hy = helicopter.getPosition().y;
-        float bx = b.getPosition().x;
-        float by = b.getPosition().y;
-        if (helicopter.getBounds().overlaps(b.getBounds())) {
-            if (hd == 'r') {
-                helicopter.setDirection('l');
-                helicopter.setPos(helicopter.getPosition().x - 3, helicopter.getPosition().y);
-                if (bd == 'l') {
-                    b.setDirection('r');
+    private void checkCollision(Player player1, Player player2) {
+        Rectangle bh = player1.getBounds();
+        Rectangle bb = player2.getBounds();
+        if (bh.overlaps(bb)) {
+            Rectangle intersection = new Rectangle();
+            Intersector.intersectRectangles(bh, bb, intersection);
+            if (intersection.getWidth() > intersection.getHeight()) {
+                //Top or bottom
+                if (player1.getPosition().y > player2.getPosition().y) {
+                    //Bottom of object1
+                    player1.getVelocity().y = Math.abs(player1.getVelocity().y);
+                    player2.getVelocity().y = -Math.abs(player2.getVelocity().y);
 
                 } else {
+                    //Top of object1
+                    player1.getVelocity().y = -Math.abs(player1.getVelocity().y);
+                    player2.getVelocity().y = Math.abs(player2.getVelocity().y);
+
                 }
+            } else if (intersection.getWidth() < intersection.getHeight()) {
+                //Right or left
+                if (player1.getPosition().x > player2.getPosition().x) {
+                    //Right of object1
+                    player1.getVelocity().x = Math.abs(player1.getVelocity().x);
+                    player2.getVelocity().x = -Math.abs(player2.getVelocity().x);
 
-            } else {
-                helicopter.setDirection('r');
-                helicopter.setPos(helicopter.getPosition().x + 3, helicopter.getPosition().y);
+                } else {
+                    //Left of object1
+                    player1.getVelocity().x = -Math.abs(player1.getVelocity().x);
+                    player2.getVelocity().x = Math.abs(player2.getVelocity().x);
 
-            }
-
-            helicopter.setVelX(-helicopter.getVelX());
-            if (helicopter.getPosition().y > b.getPosition().y) {
+                }
 
             }
         }
-
-       */
     }
 
     @Override
@@ -190,10 +200,6 @@ public class Gamestate extends State implements InputProcessor{
     @Override
     public boolean scrolled(int amount) {return false; }
 
-    public boolean collides(Rectangle player1, Rectangle player2) {
-        return player1.overlaps(player2);
-
-    }
 
     public int randomNumber(int min, int max) {
         Random rand = new Random();

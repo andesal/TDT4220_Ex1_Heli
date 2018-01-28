@@ -14,7 +14,6 @@ public class Player {
 
     protected Vector3 position;
     protected Vector3 velocity;
-    protected char direction;
     protected int speed;
 
     protected Texture texture;
@@ -23,13 +22,12 @@ public class Player {
     protected Rectangle bounds;
     protected boolean npc;
 
-    public Player(String internalTexturePath, int numFrames, int startX, int startY, float velX, float velY, char startDir, int speed) {
+    public Player(String internalTexturePath, int numFrames, int startX, int startY, float velX, float velY, int speed) {
         this.texture = new Texture(internalTexturePath);
         this.numFrames = numFrames;
         this.animation = new Animation(new TextureRegion(texture), numFrames, 0.1f);
         this.position = new Vector3(startX, startY, 0);
         this.velocity = new Vector3(velX, velY, 0);
-        this.direction = startDir;
         this.speed = speed;
         this.bounds = new Rectangle(startX, startY, this.texture.getWidth()/this.numFrames, this.texture.getHeight());
     }
@@ -44,7 +42,6 @@ public class Player {
     public void checkScreenCollision() {
         Rectangle screenBounds = Gamestate.BOUNDS;
         if (position.x + animation.getFrame().getRegionWidth() >= screenBounds.getX() + screenBounds.getWidth() || position.x <= screenBounds.getX()) {
-            direction = direction == 'r' ? 'l' : 'r';
             this.velocity.x = -this.velocity.x;
         }
         if (position.y <= screenBounds.getY() || position.y + animation.getFrame().getRegionHeight() >= screenBounds.getY() + screenBounds.getHeight()) {
@@ -70,14 +67,6 @@ public class Player {
 
     public void setVelocity(Vector3 velocity) {
         this.velocity = velocity;
-    }
-
-    public char getDirection() {
-        return direction;
-    }
-
-    public void setDirection(char direction) {
-        this.direction = direction;
     }
 
     public int getSpeed() {
